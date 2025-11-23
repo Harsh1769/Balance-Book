@@ -1,0 +1,8 @@
+{
+  "name": "Balance Book",
+  "description": "A high-level, professional accounting and financial management platform featuring AI-driven insights, invoicing, inventory control, and real-time dashboards.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
