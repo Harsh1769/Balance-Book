@@ -1,66 +1,49 @@
-# This workflow will build a Node.js project and deploy it to an Azure Functions App on Windows or Linux when a commit is pushed to your default branch.
-#
-# This workflow assumes you have already created the target Azure Functions app.
-# For instructions see:
-#   - https://learn.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-node
-#   - https://learn.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-typescript
-#
-# To configure this workflow:
-# 1. Set up the following secrets in your repository:
-#   - AZURE_FUNCTIONAPP_PUBLISH_PROFILE
-# 2. Change env variables for your configuration.
-#
-# For more information on:
-#   - GitHub Actions for Azure: https://github.com/Azure/Actions
-#   - Azure Functions Action: https://github.com/Azure/functions-action
-#   - Publish Profile: https://github.com/Azure/functions-action#using-publish-profile-as-deployment-credential-recommended
-#   - Azure Service Principal for RBAC: https://github.com/Azure/functions-action#using-azure-service-principal-for-rbac-as-deployment-credential
-#
-# For more samples to get started with GitHub Action workflows to deploy to Azure: https://github.com/Azure/actions-workflow-samples/tree/master/FunctionApp
-
-name: Deploy Node.js project to Azure Function App
+name: Build and Deploy Web App to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main"] # Trigger on pushes to the main branch
+  workflow_dispatch: # Allows manual trigger from the Actions tab
 
-env:
-  AZURE_FUNCTIONAPP_NAME: 'your-app-name'   # set this to your function app name on Azure
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'       # set this to the path to your function app project, defaults to the repository root
-  NODE_VERSION: '20.x'                      # set this to the node version to use (e.g. '8.x', '10.x', '12.x')
+# Grant GITHUB_TOKEN the necessary permissions for deployment
+permissions:
+  contents: read
+  pages: write # Permission to deploy to GitHub Pages
+  id-token: write # Permission to create and sign OIDC tokens
 
 jobs:
-  build-and-deploy:
-    runs-on: windows-latest # For Linux, use ubuntu-latest
-    environment: dev
+  build:
+    runs-on: ubuntu-latest
     steps:
-    - name: 'Checkout GitHub Action'
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    # If you want to use Azure RBAC instead of Publish Profile, then uncomment the task below
-    # - name: 'Login via Azure CLI'
-    #   uses: azure/login@v1
-    #   with:
-    #     creds: ${{ secrets.AZURE_RBAC_CREDENTIALS }} # set up AZURE_RBAC_CREDENTIALS secrets in your repository
+      # --- Step 1: Install Dependencies & Build ---
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Change this to your required Node.js version
 
-    - name: Setup Node ${{ env.NODE_VERSION }} Environment
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
+      - name: Install and Build
+        run: |
+          npm install 
+          npm run build # This command generates your static assets
 
-    - name: 'Resolve Project Dependencies Using Npm'
-      shell: pwsh # For Linux, use bash
-      run: |
-        pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-        npm install
-        npm run build --if-present
-        npm run test --if-present
-        popd
+      # --- Step 2: Upload Artifact for Deployment ---
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # This is the directory created by 'npm run build'
+          # COMMON FOLDERS: 'dist', 'build', 'out' - **ADJUST THIS**
+          path: './dist' 
 
-    - name: 'Run Azure Functions Action'
-      uses: Azure/functions-action@v1
-      id: fa
-      with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }} # Remove publish-profile to use Azure RBAC
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build # This job must wait for the 'build' job to finish
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4 # The official action for deployment
