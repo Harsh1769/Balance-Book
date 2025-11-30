@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 // Initialize the client
-const ai = new GoogleGenAI({ apiKey: AIzaSyCrDirvLfp7Kaq85-TxXnoS90iAYHrGZvc });
+const ai = new GoogleGenAI({ apiKey: "AIzaSyCrDirvLfp7Kaq85-TxXnoS90iAYHrGZvc" });
 
 export const generateFinancialAdvice = async (
   query: string,
