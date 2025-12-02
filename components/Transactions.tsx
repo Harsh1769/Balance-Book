@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Transaction, TransactionType, TransactionCategory } from '../types';
 import { CurrencyCode } from '../App';
-import { Plus, Search, Filter, ArrowDownRight, ArrowUpRight, Trash2, Calendar } from 'lucide-react';
+import { Plus, Search, Filter, ArrowDownRight, ArrowUpRight, Trash2, Calendar, Camera, Loader2, Upload } from 'lucide-react';
+import { analyzeTransactionImage } from '../services/geminiService';
 
 interface TransactionsProps {
   transactions: Transaction[];
@@ -18,6 +19,7 @@ export const Transactions: React.FC<TransactionsProps> = ({
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
   
   // Form State
   const [formData, setFormData] = useState({
@@ -27,6 +29,8 @@ export const Transactions: React.FC<TransactionsProps> = ({
     category: TransactionCategory.OTHER,
     date: new Date().toISOString().split('T')[0]
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,12 +45,16 @@ export const Transactions: React.FC<TransactionsProps> = ({
     };
     onAddTransaction(newTransaction);
     setShowForm(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
     setFormData({
-      description: '',
-      amount: '',
-      type: TransactionType.EXPENSE,
-      category: TransactionCategory.OTHER,
-      date: new Date().toISOString().split('T')[0]
+        description: '',
+        amount: '',
+        type: TransactionType.EXPENSE,
+        category: TransactionCategory.OTHER,
+        date: new Date().toISOString().split('T')[0]
     });
   };
 
@@ -55,6 +63,41 @@ export const Transactions: React.FC<TransactionsProps> = ({
       style: 'currency',
       currency: currency,
     }).format(amount);
+  };
+
+  const handleScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setIsScanning(true);
+    
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1];
+        const mime = result.split(';')[0].split(':')[1];
+        
+        try {
+            const data = await analyzeTransactionImage(base64, mime);
+            if (data) {
+                setFormData({
+                    description: data.description || '',
+                    amount: data.amount?.toString() || '',
+                    type: data.type === 'Income' ? TransactionType.INCOME : TransactionType.EXPENSE,
+                    category: data.category as TransactionCategory || TransactionCategory.OTHER,
+                    date: data.date || new Date().toISOString().split('T')[0]
+                });
+                setShowForm(true);
+            }
+        } catch (error) {
+            console.error("Scanning failed", error);
+            alert("Failed to scan receipt. Please try again.");
+        } finally {
+            setIsScanning(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+    reader.readAsDataURL(file);
   };
 
   const filteredTransactions = transactions.filter(t => 
@@ -69,13 +112,47 @@ export const Transactions: React.FC<TransactionsProps> = ({
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Transactions</h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm">Record and monitor your financial activity</p>
         </div>
-        <button 
-          onClick={() => setShowForm(true)}
-          className="bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-slate-200 dark:shadow-none flex items-center gap-2"
-        >
-          <Plus size={18} /> Add New
-        </button>
+        <div className="flex gap-3">
+            <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isScanning}
+                className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-sm flex items-center gap-2"
+            >
+                {isScanning ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                Scan Receipt
+            </button>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*" 
+                onChange={handleScan}
+            />
+
+            <button 
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-all shadow-lg shadow-slate-200 dark:shadow-none flex items-center gap-2"
+            >
+            <Plus size={18} /> Add New
+            </button>
+        </div>
       </div>
+
+      {/* Scanning Overlay */}
+      {isScanning && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl flex flex-col items-center gap-4 shadow-2xl animate-fade-in border border-slate-200 dark:border-slate-700">
+                <div className="relative">
+                    <div className="absolute inset-0 bg-blue-500 rounded-full blur opacity-20 animate-pulse"></div>
+                    <Loader2 size={48} className="animate-spin text-blue-600 dark:text-blue-400 relative z-10" />
+                </div>
+                <div className="text-center">
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-white">Analyzing Receipt</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Extracting transaction details with AI...</p>
+                </div>
+            </div>
+        </div>
+      )}
 
       {/* Add Transaction Modal/Form */}
       {showForm && (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle, Globe, Shield, Zap, BarChart3, PieChart, Play, X, Server, Users, Building2, Check } from 'lucide-react';
+import { ArrowRight, CheckCircle, Globe, Shield, Zap, BarChart3, PieChart, Play, X, Server, Users, Building2, Check, User } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -309,8 +309,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                <a href="#" className="hover:text-white transition-colors">Contact Support</a>
             </div>
          </div>
-         <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-white/5 text-center text-xs text-slate-600">
-            © 2023 Balance Book Inc. All rights reserved.
+         <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="text-center md:text-left text-xs text-slate-600">
+               © 2023 Balance Book. All rights reserved.
+            </div>
+            
+            <div className="flex flex-col items-center md:items-end gap-1">
+                <div className="text-sm font-medium text-slate-500 uppercase tracking-widest">Project By 11th Commerce</div>
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-500 text-sm">Founder & Owner</span>
+                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400 font-serif">
+                        Harsh Sharma
+                    </span>
+                </div>
+            </div>
          </div>
       </footer>
 

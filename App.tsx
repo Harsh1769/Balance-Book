@@ -43,10 +43,10 @@ export interface UserProfile {
 }
 
 const DEFAULT_USER: UserProfile = {
-  name: "Guest User",
-  role: "Viewer",
+  name: "Harsh Sharma",
+  role: "Owner",
   avatar: "", // Empty to trigger fallback
-  email: "guest@balancebook.com"
+  email: "harsh.sharma@balancebook.com"
 };
 
 type ViewState = 'landing' | 'auth' | 'app';
@@ -171,8 +171,9 @@ const App: React.FC = () => {
       }
     });
 
-    // Check Overdue Invoices
+    // Check Invoices Status and Due Dates
     invoices.forEach(inv => {
+      // 1. Overdue Check
       if (inv.status === 'Overdue') {
         newNotifications.push({
           id: `inv-${inv.id}`,
@@ -182,6 +183,30 @@ const App: React.FC = () => {
           read: false,
           timestamp: new Date(inv.dueDate)
         });
+      }
+
+      // 2. Upcoming Due Date Check (e.g. within 3 days)
+      if (inv.status === 'Unpaid') {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const due = new Date(inv.dueDate);
+        due.setHours(0, 0, 0, 0);
+        
+        // Difference in milliseconds
+        const diffTime = due.getTime() - today.getTime();
+        // Difference in days
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays >= 0 && diffDays <= 3) {
+           newNotifications.push({
+            id: `inv-due-${inv.id}`,
+            title: 'Payment Due Soon',
+            message: `Invoice #${inv.invoiceNumber} is due ${diffDays === 0 ? 'today' : `in ${diffDays} days`}.`,
+            type: 'warning',
+            read: false,
+            timestamp: new Date()
+          });
+        }
       }
     });
 
@@ -247,7 +272,7 @@ const App: React.FC = () => {
       
       if (authMode === 'register') {
         profile = {
-          name: authForm.name || "New User",
+          name: authForm.name || "Harsh Sharma",
           email: authForm.email,
           role: "Owner",
           avatar: "" // Empty to trigger auto-generation from name
@@ -255,9 +280,9 @@ const App: React.FC = () => {
       } else {
         // Login Mode
         profile = {
-          name: "Admin User",
-          email: authForm.email || "admin@balancebook.com",
-          role: "Administrator",
+          name: "Harsh Sharma",
+          email: authForm.email || "harsh.sharma@balancebook.com",
+          role: "Owner",
           avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
         };
       }
@@ -274,10 +299,10 @@ const App: React.FC = () => {
     // Simulate Google OAuth flow and data retrieval
     setTimeout(() => {
       const googleUser: UserProfile = {
-        name: "Sarah Jenkins",
+        name: "Harsh Sharma",
         role: "Owner",
-        avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        email: "sarah.jenkins@gmail.com"
+        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+        email: "harsh.sharma@balancebook.com"
       };
       setUserProfile(googleUser);
       localStorage.setItem('bb_user_profile', JSON.stringify(googleUser));
@@ -307,13 +332,18 @@ const App: React.FC = () => {
             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-emerald-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
          </div>
 
-        <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md z-10 animate-fade-in">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-tr from-blue-500 to-emerald-400 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-3xl shadow-2xl w-full max-w-md z-10 animate-fade-in relative">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-tr from-blue-500 to-emerald-400 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg transform rotate-3">
                <BookOpen className="text-white" size={32} />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Balance Book</h1>
-            <p className="text-blue-200">Enterprise Accounting Suite</p>
+            <h1 className="text-3xl font-bold text-white mb-1">Balance Book</h1>
+            <p className="text-blue-200 text-sm font-light mb-6">Enterprise Accounting Suite</p>
+            
+            <div className="inline-flex flex-col items-center bg-black/20 rounded-xl p-3 border border-white/5 w-full">
+               <div className="text-[10px] uppercase tracking-[0.2em] text-blue-300 font-bold mb-1">Project By 11th Commerce</div>
+               <div className="text-xs text-slate-300 font-medium">Founder: <span className="text-white font-semibold">Harsh Sharma</span></div>
+            </div>
           </div>
 
           {/* Auth Toggle */}
