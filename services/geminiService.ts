@@ -2,7 +2,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { TransactionCategory } from "../types";
 
 // Initialize the client
-const ai = new GoogleGenAI({ apiKey: 'AIzaSyCrDirvLfp7Kaq85-TxXnoS90iAYHrGZvc' });
+const ai = new GoogleGenAI({ apiKey: 'AIzaSyDy0G0ROdXYd0wbIAlRnbeXVV5Ji5uQtwE' });
 
 export const generateFinancialAdvice = async (
   query: string,
